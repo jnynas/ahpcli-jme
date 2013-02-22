@@ -26,9 +26,7 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 	private Displayable screen2;
 	private Displayable screen3;
 	private Command	 back;
-	private Command	 next;
-	private JSONGetter getter;
-	private JSONModel jsonModel;
+	private Command	 next;	
 	private String url;
 	
 	/**
@@ -54,27 +52,24 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 		this.screen3.addCommand(this.back);
 		this.screen3.addCommand(this.next);
 		System.out.println("start");
-		jsonModel = new JSONModel();
-		String key = "http://adhocpush.herokuapp.com/messages/testchannel";
 		
-		//String key = "http://www.google.com";
-		//String key = "http://echo.jsontest.com/key/value/url/http://google.com";
-		getter = new JSONGetter(key, jsonModel);
+		waitForRequest();
+					
+		}
+	private void waitForRequest() {	
+		String key = "http://adhocpush.herokuapp.com/messages/testchannel";
+		final JSONModel jsonModel = new JSONModel();
+		JSONGetter getter = new JSONGetter(key, jsonModel);
+		
 		getter.chain(new Task() {			
 			protected Object doInBackground(Object in) {				
-				if(jsonModel != null)
-				{
-					processCommand();
-				}
-				jsonModel = null;
-				return null;
+				processCommand(jsonModel);
+				waitForRequest();
+				return null;				
 			}});
-		getter.fork();
-		
-		
-		
+		getter.fork();		
 		}
-
+	
 	private Displayable getSreen1() {
 		return new TextBox("Text [Screen 1]", "", 100, TextField.ANY);
 	}
@@ -94,7 +89,7 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 		this.manager.next(this.screen1);
 	}
 	
-	protected void processCommand(){
+	protected void processCommand(JSONModel jsonModel){
 		String type = "";
 		try {
 			type = jsonModel.getString("_type");
@@ -115,6 +110,10 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 				e.printStackTrace();
 			}
 		}
+		else if (type.equals("find_files")) {
+			
+		}
+		
 	}
 	
 	private void launchUrl(String url) {
