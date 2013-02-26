@@ -1,4 +1,8 @@
+import java.io.IOException;
+import java.io.OutputStream;
+
 import javax.microedition.io.ConnectionNotFoundException;
+import javax.microedition.io.Connector;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Display;
@@ -9,12 +13,14 @@ import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
+import javax.microedition.io.file.*;
 
 import org.json.me.JSONArray;
 import org.json.me.JSONException;
 import org.json.me.JSONObject;
 import org.tantalum.Task;
 import org.tantalum.j2me.TantalumMIDlet;
+import org.tantalum.net.HttpGetter;
 import org.tantalum.net.json.JSONGetter;
 import org.tantalum.net.json.JSONModel;
 import org.tantalum.util.L;
@@ -64,11 +70,40 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 		getter.chain(new Task() {			
 			protected Object doInBackground(Object in) {				
 				processCommand(jsonModel);
-				waitForRequest();
+				//waitForRequest();
 				return null;				
 			}});
 		getter.fork();		
 		}
+	
+	private void downloadFile(String url, final String destinationPath) {		
+		HttpGetter httpGetter = new HttpGetter(url);
+		httpGetter.chain(new Task(){		
+			protected Object doInBackground(Object in) {
+				System.out.print("downloadFile");
+				FileConnection fc;				
+				String path = System.getProperty("fileconn.dir.photos");
+				String fname = path + "werner.jpg";
+				System.out.print(fname);
+				
+				try {
+					fc = (FileConnection)Connector.open(fname, Connector.READ_WRITE);
+					if(!fc.exists()) {
+		                  fc.create();
+		              }
+					OutputStream out = fc.openOutputStream();
+					out.write((byte[])in);
+					out.close();
+					fc.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+              
+				return null;	
+			}});
+		httpGetter.fork();
+	}
 	
 	private Displayable getSreen1() {
 		return new TextBox("Text [Screen 1]", "", 100, TextField.ANY);
@@ -110,8 +145,24 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 				e.printStackTrace();
 			}
 		}
-		else if (type.equals("find_files")) {
-			
+		else if (type.equals("download_files")) {
+			try {
+				JSONObject obj = jsonModel.jsonObject;
+				
+				JSONObject argsObj = obj.getJSONObject("args");
+				JSONArray filesArr = argsObj.getJSONArray("files");
+				
+				for (int i = 0; i < filesArr.length(); ++i) {
+					JSONObject fileObj = filesArr.getJSONObject(i);
+					String url = fileObj.getString("url");
+					String targetDir = fileObj.getString("targetdir");
+					downloadFile(url, targetDir);
+				}
+				
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 	}
