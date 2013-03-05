@@ -44,7 +44,7 @@ import org.tantalum.PlatformUtils;
  */
 public final class J2MEPlatformUtils extends PlatformUtils {
 
-    private static final int DEFAULT_NUMBER_OF_WORKERS = 4;
+    private static final int DEFAULT_NUMBER_OF_WORKERS = 8;
     final Display display;
 
     /**

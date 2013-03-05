@@ -1,5 +1,7 @@
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
 import javax.microedition.io.ConnectionNotFoundException;
 import javax.microedition.io.Connector;
@@ -21,9 +23,12 @@ import org.json.me.JSONObject;
 import org.tantalum.Task;
 import org.tantalum.j2me.TantalumMIDlet;
 import org.tantalum.net.HttpGetter;
+import org.tantalum.net.HttpPoster;
 import org.tantalum.net.json.JSONGetter;
 import org.tantalum.net.json.JSONModel;
 import org.tantalum.util.L;
+
+import sunlabs.brazil.util.Base64;
 
 public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 
@@ -34,6 +39,7 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 	private Command	 back;
 	private Command	 next;	
 	private String url;
+	private static final int CHUNK_SIZE = 1024;
 	
 	/**
 	 * Creates several screens and navigates between them.
@@ -56,35 +62,102 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 		this.screen3 = getSreen3();
 		this.screen3.setCommandListener(this);
 		this.screen3.addCommand(this.back);
-		this.screen3.addCommand(this.next);
-		System.out.println("start");
+		this.screen3.addCommand(this.next);			
 		
-		waitForRequest();
 					
 		}
 	private void waitForRequest() {	
 		String key = "http://adhocpush.herokuapp.com/messages/testchannel";
+		//String key = "http://httpbin.org/delay/10";
+		
 		final JSONModel jsonModel = new JSONModel();
 		JSONGetter getter = new JSONGetter(key, jsonModel);
-		
+		getter.setRetriesRemaining(0);
+	
 		getter.chain(new Task() {			
 			protected Object doInBackground(Object in) {				
 				processCommand(jsonModel);
-				//waitForRequest();
 				return null;				
 			}});
 		getter.fork();		
 		}
 	
+	 /**
+     * Encodes an array of bytes
+     * @param imgBytes Array of bytes to encode
+     * @return String representing the Base64 format of
+     * the array parameter
+     */
+    public String encodeBytes(byte[] inBytes) {
+    	return new String(Base64.encode(inBytes));        
+    }
+    
+    protected byte[] readFile( String fname ) throws IOException{ 
+    	FileConnection fileConn = (FileConnection)Connector.open(fname, Connector.READ);    	
+    	InputStream is = fileConn.openInputStream();
+    	long length = fileConn.fileSize();
+       
+        byte[] bytes = new byte[0];
+        int read = 0;
+      
+        while (read < length) {
+        	 byte[] data = new byte[CHUNK_SIZE];
+             int readAmount = is.read(data, 0, CHUNK_SIZE);
+             byte[] newFileData = new byte[bytes.length + CHUNK_SIZE];
+             System.arraycopy(bytes, 0, newFileData, 0, read);
+             System.arraycopy(data, 0, newFileData, read, readAmount);
+             bytes = newFileData;
+             read += readAmount;       
+        }
+        
+	    return bytes;
+    }
+        
+
+    private void uploadFile(String fname, String url) {
+    	JSONObject obj = new JSONObject();
+        try {
+			obj.put("name", "foo");
+			obj.put("num", new Integer(100));
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        L.i("sending", obj.toString());
+        
+        byte[] utf8bytes = null;
+        try {
+			utf8bytes = obj.toString().getBytes("UTF-8");
+			String tst = "";
+			for (int i = 0; i < utf8bytes.length; ++i) {
+				tst += (char)utf8bytes[i];
+				L.i("", tst);
+			}
+				
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+    	HttpPoster httpPoster = new HttpPoster(url, utf8bytes);
+    	httpPoster.setRequestProperty("Content-type", "application/json");
+    	httpPoster.chain(new Task(){
+    		protected Object doInBackground(Object in) {
+    			L.i("", "sent");
+    			return null;
+    			}
+    		}); 
+    	httpPoster.fork();
+    }
+    
 	private void downloadFile(String url, final String destinationPath) {		
 		HttpGetter httpGetter = new HttpGetter(url);
 		httpGetter.chain(new Task(){		
-			protected Object doInBackground(Object in) {
-				System.out.print("downloadFile");
+			protected Object doInBackground(Object in) {				
 				FileConnection fc;				
 				String path = System.getProperty("fileconn.dir.photos");
 				String fname = path + "werner.jpg";
-				System.out.print(fname);
+				L.i("downloadFile", fname);
 				
 				try {
 					fc = (FileConnection)Connector.open(fname, Connector.READ_WRITE);
@@ -98,8 +171,8 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
-              
+				}		
+				waitForRequest();
 				return null;	
 			}});
 		httpGetter.fork();
@@ -122,6 +195,7 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 	 */
 	protected void startApp() throws MIDletStateChangeException {
 		this.manager.next(this.screen1);
+		//waitForRequest();		
 	}
 	
 	protected void processCommand(JSONModel jsonModel){
@@ -140,10 +214,12 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 				JSONObject argsObj = obj.getJSONObject("args");
 				String url = argsObj.getString("url");
 				launchUrl(url);
+				
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			waitForRequest();
 		}
 		else if (type.equals("download_files")) {
 			try {
@@ -174,19 +250,19 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 		} catch (ConnectionNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}	
 	}
 	/* (non-Javadoc)
 	 * @see javax.microedition.lcdui.CommandListener#commandAction(javax.microedition.lcdui.Command, javax.microedition.lcdui.Displayable)
 	 */
 	public void commandAction(Command command, Displayable displayable) {
 		if (command == this.next) {
-			if (displayable == this.screen1) {
-				this.manager.next(this.screen2);
-			} else
-			if (displayable == this.screen2) {
-				this.manager.next(this.screen3);
-			}
+			L.i("", "command");
+			String path = System.getProperty("fileconn.dir.photos");
+			String fname = path + "werner.jpg";
+			
+			String key = "http://adhocpush.herokuapp.com/messages/testchannel";
+			uploadFile(fname, key);
 		}
 		
 		if (command == this.back) {
