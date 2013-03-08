@@ -40,8 +40,9 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 	private Displayable screen3;
 	private Command	 back;
 	private Command	 next;	
-	private String url;
+
 	private static final int CHUNK_SIZE = 1024;
+	private static final String url = "http://adhocpush.herokuapp.com/messages/testchannel";
 	
 	/**
 	 * Creates several screens and navigates between them.
@@ -111,6 +112,10 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
              read += readAmount;
              written += writeAmount;
         }
+        L.i("lenght", "" + length);
+        L.i("read", "" + read);
+        L.i("written", "" + written);
+        
         is.close();
         fileConn.close();	    
     }
@@ -232,6 +237,24 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 				e.printStackTrace();
 			}
 		}
+		else if (type.equals("upload_files")) {
+			try {
+				JSONObject obj = jsonModel.jsonObject;
+				JSONObject cookieObj = obj.getJSONObject("request_cookie");
+				JSONObject argsObj = obj.getJSONObject("args");
+				JSONArray filesArr = argsObj.getJSONArray("files");
+				
+				
+				for (int i = 0; i < filesArr.length(); ++i) {
+					String fname = filesArr.getString(i);
+					uploadFile(fname, url);
+				}
+				
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		
 	}
 	
@@ -253,8 +276,8 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 			String path = System.getProperty("fileconn.dir.photos");
 			String fname = path + "werner.jpg";
 			
-			String key = "http://adhocpush.herokuapp.com/messages/testchannel";
-			uploadFile(fname, key);
+			
+			uploadFile(fname, url);
 		}
 		
 		if (command == this.back) {
