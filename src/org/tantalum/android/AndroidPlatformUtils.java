@@ -132,6 +132,7 @@ public final class AndroidPlatformUtils extends PlatformUtils {
 
         final HttpURLConnection httpConnection;
         InputStream is = null;
+        OutputStream os = null;
 
         /**
          * Create an Android-specific handler for HttpConnecions
@@ -162,6 +163,14 @@ public final class AndroidPlatformUtils extends PlatformUtils {
             }
 
             return is;
+        }
+        
+        public OutputStream getOutputStream() throws IOException {
+            if (os == null) {
+                os = httpConnection.getOutputStream();
+            }
+
+            return os;
         }
 
         /**

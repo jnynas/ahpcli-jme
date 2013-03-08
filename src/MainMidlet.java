@@ -28,7 +28,9 @@ import org.tantalum.net.json.JSONGetter;
 import org.tantalum.net.json.JSONModel;
 import org.tantalum.util.L;
 
-import sunlabs.brazil.util.Base64;
+import org.apache.commons.codec.binary.Base64;
+import org.dx.seppo.StreamWriter;
+
 
 public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 
@@ -88,59 +90,49 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
      * @return String representing the Base64 format of
      * the array parameter
      */
-    public String encodeBytes(byte[] inBytes) {
-    	return new String(Base64.encode(inBytes));        
-    }
-    
-    protected byte[] readFile( String fname ) throws IOException{ 
+        
+    protected void sendFile( String fname, OutputStream os ) throws IOException{ 
     	FileConnection fileConn = (FileConnection)Connector.open(fname, Connector.READ);    	
     	InputStream is = fileConn.openInputStream();
     	long length = fileConn.fileSize();
        
-        byte[] bytes = new byte[0];
+        //byte[] bytes = new byte[0];
+        //String encodedStr = "";
         int read = 0;
-      
+        int written = 0;
+        Base64 encoder = new Base64();
+        
         while (read < length) {
         	 byte[] data = new byte[CHUNK_SIZE];
              int readAmount = is.read(data, 0, CHUNK_SIZE);
-             byte[] newFileData = new byte[bytes.length + CHUNK_SIZE];
-             System.arraycopy(bytes, 0, newFileData, 0, read);
-             System.arraycopy(data, 0, newFileData, read, readAmount);
-             bytes = newFileData;
-             read += readAmount;       
+             byte[] out = encoder.encode(data);
+             os.write(out);
+             int writeAmount = out.length;
+             read += readAmount;
+             written += writeAmount;
         }
-        
-	    return bytes;
+        is.close();
+        fileConn.close();	    
     }
         
 
-    private void uploadFile(String fname, String url) {
-    	JSONObject obj = new JSONObject();
-        try {
-			obj.put("name", "foo");
-			obj.put("num", new Integer(100));
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        L.i("sending", obj.toString());
-        
-        byte[] utf8bytes = null;
-        try {
-			utf8bytes = obj.toString().getBytes("UTF-8");
-			String tst = "";
-			for (int i = 0; i < utf8bytes.length; ++i) {
-				tst += (char)utf8bytes[i];
-				L.i("", tst);
-			}
-				
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        
-    	HttpPoster httpPoster = new HttpPoster(url, utf8bytes);
-    	httpPoster.setRequestProperty("Content-type", "application/json");
+    private void uploadFile(final String fname, String url) {
+    	
+    	HttpPoster httpPoster = new HttpPoster(url);
+    	httpPoster.setWriter(new StreamWriter(){
+
+			public void writeReady(OutputStream os) {
+				try {
+					sendFile(fname, os);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}				
+			}    		
+    	});
+    	
+    	httpPoster.setRequestProperty("Content-type", "multipart/mixed");
+    	
     	httpPoster.chain(new Task(){
     		protected Object doInBackground(Object in) {
     			L.i("", "sent");
@@ -279,4 +271,5 @@ public class MainMidlet extends TantalumMIDlet  implements CommandListener {
 	 * @see javax.microedition.midlet.MIDlet#pauseApp()
 	 */
 	protected void pauseApp() {}
+
 }

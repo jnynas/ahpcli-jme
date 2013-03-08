@@ -102,11 +102,11 @@ public final class J2MEPlatformUtils extends PlatformUtils {
         try {
             final J2MEHttpConn httpConn = new J2MEHttpConn(url, requestPropertyKeys, requestPropertyValues);
             httpConn.httpConnection.setRequestMethod(requestMethod);
-            if (bytes != null) {
+            /*if (bytes != null) {
                 out = httpConn.httpConnection.openOutputStream();
                 out.write(bytes);
-            }
-
+            }*/
+            
             return httpConn;
         } finally {
             if (out != null) {
@@ -123,6 +123,7 @@ public final class J2MEPlatformUtils extends PlatformUtils {
 
         final HttpConnection httpConnection;
         InputStream is = null;
+        OutputStream os = null;
 
         /**
          * Create a platform-specific HTTP network connection, and set the HTTP
@@ -152,6 +153,20 @@ public final class J2MEPlatformUtils extends PlatformUtils {
             }
 
             return is;
+        }
+        
+        /**
+         * Get the OutputStream from the platform-specific HTTP connection
+         *
+         * @return
+         * @throws IOException
+         */
+        public OutputStream getOutputStream() throws IOException {
+            if (os == null) {
+                os = httpConnection.openOutputStream();
+            }
+
+            return os;
         }
 
         /**

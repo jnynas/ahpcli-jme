@@ -26,9 +26,12 @@ package org.tantalum.net;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Hashtable;
 import java.util.Vector;
 import javax.microedition.io.ConnectionNotFoundException;
+
+import org.dx.seppo.StreamWriter;
 import org.tantalum.PlatformUtils;
 import org.tantalum.Task;
 import org.tantalum.util.L;
@@ -71,8 +74,17 @@ public class HttpGetter extends Task {
     private Vector requestPropertyKeys = new Vector();
     private Vector requestPropertyValues = new Vector();
     private HttpGetter duplicateTaskWeShouldJoinInsteadOfReGetting = null;
+    private StreamWriter writer;
 
-    /**
+    public StreamWriter getWriter() {
+		return writer;
+	}
+
+	public void setWriter(StreamWriter writer) {
+		this.writer = writer;
+	}
+
+	/**
      * Get the byte[] from the URL specified by the input argument when
      * exec(url) is called. This may be chained from a previous chain()ed
      * asynchronous task.
@@ -208,22 +220,32 @@ public class HttpGetter extends Task {
         boolean tryAgain = false;
         boolean success = false;
         final String url2 = getUrl();
-
+       
         try {
+        	InputStream inputStream = null;
+            OutputStream outputStream = null;
+            
             if (this instanceof HttpPoster) {
-                if (postMessage == null) {
+               /* if (postMessage == null) {
                     throw new IllegalArgumentException("null HTTP POST- did you forget to call HttpPoster.this.setMessage(byte[]) ? : " + key);
-                }
-                httpConn = PlatformUtils.getHttpPostConn(url2, requestPropertyKeys, requestPropertyValues, postMessage);
+                }*/
+                httpConn = PlatformUtils.getHttpPostConn(url2, requestPropertyKeys, requestPropertyValues/*, postMessage*/);
+                outputStream = httpConn.getOutputStream();
+                writer.writeReady(outputStream);
             } else {
                 httpConn = PlatformUtils.getHttpGetConn(url2, requestPropertyKeys, requestPropertyValues);
-            }
-
-            final InputStream inputStream = httpConn.getInputStream();
+                inputStream = httpConn.getInputStream();
+            }            
+            
+            	
+            
             final long length = httpConn.getLength();
             responseCode = httpConn.getResponseCode();
             httpConn.getResponseHeaders(responseHeaders);
-
+            if(outputStream!=null)
+            {
+            	
+            }
             if (length > 0 && length < 1000000) {
                 //#debug
                 L.i(this.getClass().getName() + " start fixed_length read", key + " content_length=" + length);

@@ -49,9 +49,9 @@ public class HttpPoster extends HttpGetter {
      * @param key
      * @param message 
      */
-    public HttpPoster(final String key, final byte[] message) {
-        super(key, message);
-    }
+    //public HttpPoster(final String key, final byte[] message) {
+        //super(key, message);
+    //}
 
     /**
      * Set the message to be HTTP POSTed to the server
@@ -59,13 +59,13 @@ public class HttpPoster extends HttpGetter {
      * @param message
      * @return 
      */
-    public HttpPoster setMessage(final byte[] message) {
-        if (message == null) {
-            throw new IllegalArgumentException(this.getClass().getName() + " was passed null message- meaningless POST or PUT operation: " + key);
-        }
-        this.postMessage = new byte[message.length];
-        System.arraycopy(message, 0, this.postMessage, 0, message.length);
-
-        return this;
-    }
+//    public HttpPoster setMessage(final byte[] message) {
+//        if (message == null) {
+//            throw new IllegalArgumentException(this.getClass().getName() + " was passed null message- meaningless POST or PUT operation: " + key);
+//        }
+//        this.postMessage = new byte[message.length];
+//        System.arraycopy(message, 0, this.postMessage, 0, message.length);
+//
+//        return this;
+//    }
 }

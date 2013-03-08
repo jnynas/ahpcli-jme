@@ -25,6 +25,7 @@ package org.tantalum;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Hashtable;
 import java.util.Vector;
 import org.tantalum.storage.FlashCache;
@@ -339,8 +340,8 @@ public abstract class PlatformUtils {
      * @return
      * @throws IOException
      */
-    public static HttpConn getHttpPostConn(final String url, final Vector requestPropertyKeys, final Vector requestPropertyValues, final byte[] bytes) throws IOException {
-        return PlatformUtils.platformUtils.doGetHttpConn(url, requestPropertyKeys, requestPropertyValues, bytes, "POST");
+    public static HttpConn getHttpPostConn(final String url, final Vector requestPropertyKeys, final Vector requestPropertyValues/*, final byte[] bytes*/) throws IOException {
+        return PlatformUtils.platformUtils.doGetHttpConn(url, requestPropertyKeys, requestPropertyValues, null, "POST");
     }
 
     /**
@@ -373,7 +374,7 @@ public abstract class PlatformUtils {
          * @throws IOException
          */
         public InputStream getInputStream() throws IOException;
-
+        public OutputStream getOutputStream() throws IOException;
         /**
          * Get the response code provided by the HTTP server after the
          * connection is made
